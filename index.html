@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oblique Strategies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --card-w: 480px;
+      --card-h: 320px;
+      --cream: #f5f0e8;
+      --cream-dark: #ede5d4;
+      --ink: #1a1410;
+      --ink-light: #3d3228;
+      --accent: #8b6914;
+      --bg-dark: #0e0c09;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg-dark);
+      font-family: 'Cormorant Garamond', serif;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+
+    /* Atmospheric background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 30% 40%, #1c1508 0%, transparent 70%),
+        radial-gradient(ellipse 60% 80% at 75% 65%, #0a1a0f 0%, transparent 60%),
+        radial-gradient(ellipse 100% 100% at 50% 50%, #150f06 0%, #060402 100%);
+      z-index: 0;
+    }
+
+    /* Grain overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 128px;
+      opacity: 0.6;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .scene {
+      position: relative;
+      z-index: 1;
+      width: var(--card-w);
+      height: var(--card-h);
+      perspective: 1200px;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.85s cubic-bezier(0.645, 0.045, 0.355, 1.000);
+      cursor: pointer;
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+
+      /* Paper texture via CSS */
+      background-color: var(--cream);
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 28px,
+          rgba(139, 105, 20, 0.03) 28px,
+          rgba(139, 105, 20, 0.03) 29px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 28px,
+          rgba(139, 105, 20, 0.02) 28px,
+          rgba(139, 105, 20, 0.02) 29px
+        );
+
+      box-shadow:
+        0 2px 0 rgba(139, 105, 20, 0.15),
+        0 4px 0 rgba(139, 105, 20, 0.08),
+        0 25px 60px rgba(0, 0, 0, 0.7),
+        0 8px 24px rgba(0, 0, 0, 0.5),
+        inset 0 0 40px rgba(139, 105, 20, 0.06);
+    }
+
+    /* Worn edge effect */
+    .face::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 4px;
+      box-shadow: inset 0 0 0 1px rgba(139, 105, 20, 0.2);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .face--back {
+      transform: rotateY(180deg);
+    }
+
+    /* ── FRONT: Title card ── */
+    .front-content {
+      text-align: center;
+      padding: 40px 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .title-main {
+      font-family: 'Cinzel', serif;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: var(--ink);
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+
+    .title-sub {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 14px;
+      color: var(--ink-light);
+      letter-spacing: 0.02em;
+      margin-bottom: 28px;
+    }
+
+    .title-divider {
+      width: 120px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--accent), transparent);
+      margin-bottom: 28px;
+    }
+
+    .title-authors {
+      font-family: 'Cinzel', serif;
+      font-size: 11.5px;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+
+    .title-edition {
+      font-family: 'IM Fell English', serif;
+      font-size: 12px;
+      color: var(--ink-light);
+      margin-bottom: 6px;
+    }
+
+    .title-copyright {
+      font-family: 'IM Fell English', serif;
+      font-size: 11px;
+      color: var(--accent);
+      opacity: 0.7;
+    }
+
+    /* ── BACK: Explainer / Strategy ── */
+    .back-content {
+      padding: 44px 52px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .back-text {
+      font-family: 'IM Fell English', serif;
+      font-size: 13.5px;
+      line-height: 1.75;
+      color: var(--ink-light);
+      max-width: 380px;
+    }
+
+    /* ── Start card ── */
+    .start-content {
+      text-align: center;
+      padding: 40px 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .start-title {
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      color: var(--ink);
+    }
+
+    .start-divider {
+      width: 80px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--accent), transparent);
+    }
+
+    .start-cta {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 14px;
+      color: var(--ink-light);
+      letter-spacing: 0.03em;
+    }
+
+    /* ── Strategy card ── */
+    .strategy-text {
+      font-family: 'IM Fell English', serif;
+      font-size: 20px;
+      line-height: 1.5;
+      color: var(--ink);
+      text-align: center;
+      padding: 0 52px;
+      max-width: 380px;
+    }
+
+    /* ── Hint below card ── */
+    .hint {
+      position: relative;
+      z-index: 1;
+      margin-top: 32px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.18);
+      transition: opacity 0.4s;
+    }
+
+    /* Corner ornaments on card faces */
+    .corner {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-color: rgba(139, 105, 20, 0.25);
+      border-style: solid;
+    }
+    .corner--tl { top: 14px; left: 14px; border-width: 1px 0 0 1px; }
+    .corner--tr { top: 14px; right: 14px; border-width: 1px 1px 0 0; }
+    .corner--bl { bottom: 14px; left: 14px; border-width: 0 0 1px 1px; }
+    .corner--br { bottom: 14px; right: 14px; border-width: 0 1px 1px 0; }
+
+    /* Fade-in on load */
+    .scene {
+      animation: fadeIn 1.2s ease both;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Strategy text fade in */
+    @keyframes textReveal {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .strategy-text.reveal {
+      animation: textReveal 0.5s 0.4s ease both;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="scene">
+    <div class="card" id="card">
+
+      <!-- FRONT FACE -->
+      <div class="face face--front" id="frontFace">
+        <div class="corner corner--tl"></div>
+        <div class="corner corner--tr"></div>
+        <div class="corner corner--bl"></div>
+        <div class="corner corner--br"></div>
+        <!-- Content injected by JS -->
+      </div>
+
+      <!-- BACK FACE -->
+      <div class="face face--back" id="backFace">
+        <div class="corner corner--tl"></div>
+        <div class="corner corner--tr"></div>
+        <div class="corner corner--bl"></div>
+        <div class="corner corner--br"></div>
+        <!-- Content injected by JS -->
+      </div>
+
+    </div>
+  </div>
+
+  <div class="hint" id="hint">click to continue</div>
+
+  <script>
+    const card     = document.getElementById('card');
+    const frontFace = document.getElementById('frontFace');
+    const backFace  = document.getElementById('backFace');
+    const hint      = document.getElementById('hint');
+
+    // ── States ──────────────────────────────────────────
+    // phase 0: title → explainer (one-time intro)
+    // phase 1: start ↔ strategy (repeating game)
+    let phase     = 0;
+    let isFlipped = false;
+    let locked    = false; // prevent double-click during animation
+
+    // ── Texts ───────────────────────────────────────────
+    const strategies = [
+      "Abandon normal instruments",
+      "Accept advice",
+      "Accretion",
+      "Always first steps",
+      "Allow an easement (an easement is the abandonment of a stricture)",
+      "Are there sections? Consider transitions",
+      "Ask people to work against their better judgement",
+      "Ask your body",
+      "Is the style right?",
+      "Use something nearby as a model",
+      "Be dirty",
+      "What is the simplest solution?",
+      "Be extravagant",
+      "Be less critical more often",
+      "Breathe more deeply",
+      "Remove ambiguities and convert to specifics",
+      "Change nothing and continue with immaculate consistency",
+      "Remove specifics and convert to ambiguities",
+      "Courage!",
+      "Cut a vital connection",
+      "Decorate, decorate",
+      "Define an area as 'safe' and use it as an anchor",
+      "Destroy — nothing — the most important thing",
+      "Discard an axiom",
+      "Disciplined self-indulgence",
+      "Disconnect from desire",
+      "Discover the recipes you are using and abandon them",
+      "Distorting time",
+      "Do nothing for as long as possible",
+      "Don't be afraid of things because they're easy to do",
+      "Don't be frightened of cliches",
+      "Don't be frightened to display your talents",
+      "A line has two sides",
+      "From nothing to more than nothing",
+      "Don't break the silence",
+      "Don't stress one thing more than another",
+      "Bridges — build — burn",
+      "Do something boring",
+      "Idiot glee (?)",
+      "It is quite possible (after all)",
+      "Lost in useless territory",
+      "Revaluation (a warm feeling)",
+      "What are the sections sections of? Imagine a caterpillar moving",
+      "Imagine the piece as a set of disconnected events",
+      "Is the intonation correct?",
+      "Lowest common denominator",
+      "Children — speaking — singing",
+      "Intentions — nobility of — humility of — credibility of",
+      "Balance the consistency principle with the inconsistency principle",
+      "Cascades",
+      "Change instrument roles",
+      "Cluster analysis",
+      "Consider different fading systems",
+      "Consult other sources — promising — unpromising",
+      "Emphasise repetitions",
+      "Fill every beat with something",
+      "Ghost echoes",
+      "Go slowly all the way round the outside",
+      "Infinitesimal gradations",
+      "Into the impossible",
+      "Mechanicalise something idiosyncratic",
+      "Mute and continue",
+      "(Organic) machinery",
+      "The tape is now the music",
+      "Think of the radio",
+      "Use fewer notes",
+      "What is the reality of the situation?",
+      "You can only make one dot at a time",
+      "Always give yourself credit for having more than personality",
+      "Convert a melodic element into a rhythmic element",
+      "Do the washing up",
+      "Get your neck massaged",
+      "Left channel, right channel, centre channel",
+      "Put in earplugs",
+      "Spectrum analysis",
+      "Tape your mouth",
+      "Twist the spine",
+      "Make a sudden, destructive unpredictable action; incorporate",
+      "Make an exhaustive list of everything you might do and do the last thing on the list",
+      "Do the words need changing?",
+      "Emphasize differences",
+      "Emphasize the flaws",
+      "Faced with a choice, do both",
+      "Gardening, not architecture",
+      "Give the game away",
+      "Give way to your worst impulse",
+      "Go outside. Shut the door.",
+      "Go to an extreme, move back to a more comfortable place",
+      "Who should be doing this job? How would they do it?",
+      "How would you have done it?",
+      "In total darkness, or in a very large room, very quietly",
+      "Is it finished?",
+      "Is there something missing?",
+      "Just carry on",
+      "Listen to the quiet voice",
+      "Look at the order in which you do things",
+      "Look closely at the most embarrassing details and amplify them",
+      "Make it more sensual",
+      "Make something implied more definite",
+      "Humanise something free of error",
+      "Not building a wall but making a brick",
+      "Once the search is in progress, something will be found",
+      "Only a part, not the whole",
+      "Only one element of each kind",
+      "Overtly resist change",
+      "Question the heroic approach",
+      "Remember those quiet evenings",
+      "Repetition is a form of change",
+      "Retrace your steps",
+      "Reverse",
+      "Simple subtraction",
+      "Simply a matter of work",
+      "Slow preparation, fast execution",
+      "State the problem in words as clearly as possible",
+      "Take a break",
+      "Take away the elements in order of apparent non-importance",
+      "The inconsistency principle",
+      "The most important thing is the thing most easily forgotten",
+      "Think — inside the work — outside the work",
+      "Tidy up",
+      "Towards the insignificant",
+      "Try faking it!",
+      "Turn it upside down",
+      "Use an old idea",
+      "Use filters",
+      "Use 'unqualified' people",
+      "You don't have to be ashamed of using your own ideas",
+      "Voice nagging suspicions",
+      "Water",
+      "Which frame would make this look right?",
+      "What are you really thinking about just now? Incorporate",
+      "What mistakes did you make last time?",
+      "What to increase? What to reduce?",
+      "What to maintain?",
+      "What were you really thinking about just now?",
+      "What wouldn't you do?",
+      "What would your closest friend do?",
+      "When is it for?",
+      "Where is the edge? Where does the frame start?",
+      "Which elements can be grouped?",
+      "Work at a different speed",
+      "Would anybody want it?",
+      "Honor thy error as a hidden intention",
+    ];
+
+    // ── HTML templates ────────────────────────────────────
+
+    function titleHTML() {
+      return `
+        <div class="front-content">
+          <div class="title-main">OBLIQUE STRATEGIES</div>
+          <div class="title-sub">Over one hundred worthwhile dilemmas</div>
+          <div class="title-divider"></div>
+          <div class="title-authors">BRIAN ENO &amp; PETER SCHMIDT</div>
+          <div class="title-edition">New edition, revised and compiled, 2023</div>
+          <div class="title-copyright">© 1975 Brian Eno and Peter Schmidt</div>
+        </div>`;
+    }
+
+    function explainerHTML() {
+      return `
+        <div class="back-content">
+          <p class="back-text">These cards evolved from separate observations of the principles underlying what we were doing. Sometimes they were recognized in retrospect, sometimes they were identified as they were happening, sometimes they were formulated.<br><br>They can be used as a pack — a set of possibilities being continuously reviewed in the mind — or by drawing a single card from the shuffled pack when a dilemma occurs in a working situation. In this case the card is trusted even if its appropriateness is quite unclear.</p>
+        </div>`;
+    }
+
+    function startHTML() {
+      return `
+        <div class="start-content">
+          <div class="start-title">OBLIQUE STRATEGIES</div>
+          <div class="start-divider"></div>
+          <div class="start-cta">click to draw a new card</div>
+        </div>`;
+    }
+
+    function strategyHTML(text) {
+      return `<p class="strategy-text reveal">${text}</p>`;
+    }
+
+    // ── Init ─────────────────────────────────────────────
+    function setFront(html) {
+      // Preserve corner ornaments
+      const corners = frontFace.querySelectorAll('.corner');
+      frontFace.innerHTML = html;
+      corners.forEach(c => frontFace.appendChild(c));
+    }
+
+    function setBack(html) {
+      const corners = backFace.querySelectorAll('.corner');
+      backFace.innerHTML = html;
+      corners.forEach(c => backFace.appendChild(c));
+    }
+
+    // Seed initial state
+    setFront(titleHTML());
+    setBack(explainerHTML());
+
+    // ── Click handler ─────────────────────────────────────
+    document.addEventListener('click', () => {
+      if (locked) return;
+      locked = true;
+
+      const FLIP_DURATION = 850;
+      const MID = FLIP_DURATION / 2;
+
+      if (phase === 0) {
+        if (!isFlipped) {
+          // Title → flip → Explainer
+          card.classList.add('flipped');
+          isFlipped = true;
+          hint.textContent = 'click to continue';
+        } else {
+          // Explainer → flip back → Start  (transition to phase 1)
+          card.classList.remove('flipped');
+          isFlipped = false;
+          hint.textContent = 'click to draw';
+
+          // Swap front content mid-flip (invisible to user)
+          setTimeout(() => {
+            setFront(startHTML());
+            phase = 1;
+          }, MID);
+        }
+      } else {
+        // Phase 1: start ↔ strategy
+        if (!isFlipped) {
+          // Start → flip → Strategy
+          const pick = strategies[Math.floor(Math.random() * strategies.length)];
+          // Update back just before flip reaches middle
+          setBack(strategyHTML(pick));
+          card.classList.add('flipped');
+          isFlipped = true;
+          hint.textContent = 'click to draw again';
+        } else {
+          // Strategy → flip → Start
+          card.classList.remove('flipped');
+          isFlipped = false;
+          hint.textContent = 'click to draw';
+        }
+      }
+
+      setTimeout(() => { locked = false; }, FLIP_DURATION + 50);
+    });
+  </script>
+
+</body>
+</html>
